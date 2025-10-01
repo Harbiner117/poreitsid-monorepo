@@ -1,4 +1,5 @@
 name: CI Pipeline
+
 on:
   push:
     branches: ['**']
@@ -8,14 +9,10 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -23,7 +20,15 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Install dependencies
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies (workspace)
         run: pnpm i -w --frozen-lockfile
 
       - name: Lint
@@ -35,13 +40,18 @@ jobs:
       - name: Test engine with coverage
         run: pnpm -F @poreitsid/engine test -- --coverage
 
-      - name: Build web app
-        run: pnpm -F @poreitsid/web build
+      # Build everything so sim has dist/cli.js available
+      - name: Build all packages
+        run: pnpm -w build
+
+      # (Optional) make sure the sim specifically is built
+      - name: Build sim (explicit)
+        run: pnpm -F @poreitsid/sim build
 
       - name: Run simulation tests
         run: pnpm -F @poreitsid/sim sim -- --games 100
 
-      - name: Security audit
+      - name: Security audit (best-effort)
         run: npx osv-scanner -r . || true
         continue-on-error: true
 
@@ -51,6 +61,7 @@ jobs:
         with:
           name: sim-reports
           path: packages/sim/reports/**
+          if-no-files-found: ignore
           retention-days: 30
 
       - name: Upload coverage
@@ -59,4 +70,5 @@ jobs:
         with:
           name: coverage-report
           path: packages/engine/coverage/**
+          if-no-files-found: ignore
           retention-days: 30
