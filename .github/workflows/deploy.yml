@@ -34,6 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
 
       - name: Enable Corepack
         run: corepack enable
@@ -51,9 +52,20 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpmstore-
 
       - name: Install deps (workspace)
-        run: pnpm i -w
+        run: pnpm i -w --frozen-lockfile
 
       - name: Show Vercel CLI version (debug)
         run: npx vercel --version
 
-      - name: Vercel
+      - name: Vercel Pull (production)
+        run: npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        working-directory: apps/web
+
+      - name: Vercel Build
+        run: npx vercel build --token="$VERCEL_TOKEN"
+        working-directory: apps/web
+
+      # Add --prod to make main → production
+      - name: Vercel Deploy (prebuilt preview)
+        run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+        working-directory: apps/web
