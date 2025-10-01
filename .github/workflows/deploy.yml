@@ -36,13 +36,21 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
+      # Activate pnpm from package.json's "packageManager"
+      - name: Enable & Prepare PNPM
+        shell: bash
+        run: |
+          set -e
+          corepack enable
+          # read version from package.json (fallback to 9.0.0 if jq missing)
+          if command -v jq >/dev/null 2>&1; then
+            VER=$(jq -r '.packageManager' package.json | cut -d@ -f2)
+          else
+            VER=9.0.0
+          fi
+          echo "Activating pnpm@$VER via Corepack"
+          corepack prepare pnpm@$VER --activate
+          pnpm -v
 
       - name: Cache PNPM store
         uses: actions/cache@v4
@@ -65,7 +73,7 @@ jobs:
         run: npx vercel build --token="$VERCEL_TOKEN"
         working-directory: apps/web
 
-      # Add --prod to make main → production
+      # Add --prod to ship main → production
       - name: Vercel Deploy (prebuilt preview)
         run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
         working-directory: apps/web
