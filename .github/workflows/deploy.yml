@@ -1,46 +1,57 @@
-name: Deploy to Production
+name: Deploy to Vercel
+
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - name: Setup Node.js
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm i -w --frozen-lockfile
-
-      - name: Build all packages
-        run: pnpm -w build
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: apps/web
-          vercel-args: '--prod'
+          version: 9
+          run_install: false
 
-      - name: Notify deployment status
-        if: always()
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful"
-          else
-            echo "❌ Deployment failed"
-          fi
+      - name: Cache PNPM store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpmstore-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpmstore-
+
+      - name: Install deps (workspace)
+        run: pnpm i -w
+
+      # Pull Vercel project/environment settings into .vercel/
+      - name: Vercel Pull (production)
+        run: npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        working-directory: apps/web
+
+      # Build with Vercel (uses your monorepo config + Next.js)
+      - name: Vercel Build
+        run: npx vercel build --token="$VERCEL_TOKEN"
+        working-directory: apps/web
+
+      # Deploy the prebuilt output
+      - name: Vercel Deploy (prebuilt)
+        run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+        working-directory: apps/web
