@@ -1,0 +1,62 @@
+name: CI Pipeline
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm i -w --frozen-lockfile
+
+      - name: Lint
+        run: pnpm -w lint
+
+      - name: Type check
+        run: pnpm -w typecheck
+
+      - name: Test engine with coverage
+        run: pnpm -F @poreitsid/engine test -- --coverage
+
+      - name: Build web app
+        run: pnpm -F @poreitsid/web build
+
+      - name: Run simulation tests
+        run: pnpm -F @poreitsid/sim sim -- --games 100
+
+      - name: Security audit
+        run: npx osv-scanner -r . || true
+        continue-on-error: true
+
+      - name: Upload simulation reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sim-reports
+          path: packages/sim/reports/**
+          retention-days: 30
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: packages/engine/coverage/**
+          retention-days: 30

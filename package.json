@@ -1,0 +1,24 @@
+{
+  "name": "poreitsid-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for Poreitsid game project",
+  "scripts": {
+    "dev": "pnpm -F @poreitsid/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.1",
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

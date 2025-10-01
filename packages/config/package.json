@@ -1,0 +1,10 @@
+{
+  "name": "@poreitsid/config",
+  "version": "1.0.0",
+  "main": "./index.js",
+  "files": [
+    "eslint.js",
+    "typescript.json"
+  ],
+  "description": "Shared configuration files for the monorepo"
+}
