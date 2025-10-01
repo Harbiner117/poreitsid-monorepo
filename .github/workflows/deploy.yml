@@ -3,6 +3,11 @@ name: Deploy to Vercel
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 jobs:
@@ -18,40 +23,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Preflight (check required secrets)
+        run: |
+          [ -n "$VERCEL_TOKEN" ] || { echo "❌ VERCEL_TOKEN missing"; exit 1; }
+          [ -n "$VERCEL_ORG_ID" ] || { echo "❌ VERCEL_ORG_ID missing"; exit 1; }
+          [ -n "$VERCEL_PROJECT_ID" ] || { echo "❌ VERCEL_PROJECT_ID missing"; exit 1; }
+          echo "✅ All required secrets are present."
+
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 9
           run_install: false
 
       - name: Cache PNPM store
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.pnpm-store
+          path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpmstore-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpmstore-
+          restore-keys: ${{ runner.os }}-pnpmstore-
 
       - name: Install deps (workspace)
         run: pnpm i -w
 
-      # Pull Vercel project/environment settings into .vercel/
-      - name: Vercel Pull (production)
-        run: npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-        working-directory: apps/web
+      - name: Show Vercel CLI version (debug)
+        run: npx vercel --version
 
-      # Build with Vercel (uses your monorepo config + Next.js)
-      - name: Vercel Build
-        run: npx vercel build --token="$VERCEL_TOKEN"
-        working-directory: apps/web
-
-      # Deploy the prebuilt output
-      - name: Vercel Deploy (prebuilt)
-        run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
-        working-directory: apps/web
+      - name: Vercel
