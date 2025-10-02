@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd ../.. && pnpm build",
+  "installCommand": "echo 'Dependencies already installed'",
+  "framework": null
+}
