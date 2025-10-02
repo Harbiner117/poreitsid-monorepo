@@ -55,20 +55,20 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
-      - name: Build web app specifically
-        run: pnpm build
-        working-directory: apps/web
-
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      - name: Deploy to Vercel (direct)
-        run: |
-          vercel deploy --prod \
-            --token="$VERCEL_TOKEN" \
-            --yes \
-            --build-env NODE_VERSION=20
-        working-directory: apps/web
+      - name: Show Vercel CLI version (debug)
+        run: vercel --version
+
+      - name: Vercel Pull (production)
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Vercel Build
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Vercel Deploy (production)
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Deployment Summary
         if: success()
