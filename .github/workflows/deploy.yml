@@ -28,13 +28,10 @@ jobs:
           [ -n "$VERCEL_PROJECT_ID" ] || { echo "❌ VERCEL_PROJECT_ID missing"; exit 1; }
           echo "✅ All required secrets are present."
 
-      # Setup pnpm FIRST
+      # Setup pnpm - let it read version from package.json
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
-      # Setup Node.js AFTER pnpm (remove cache temporarily)
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
