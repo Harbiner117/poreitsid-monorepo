@@ -1,10 +1,9 @@
-import type { Card } from "../cards";
+﻿import type { Card } from "../cards";
 import type { GameState, PlayerId } from "../types";
 
-const isJD = (c: Card) => c.rank === "J" && c.suit === "♦";
-const isQS = (c: Card) => c.rank === "Q" && c.suit === "♠";
+const isJD = (c: Card) => c.rank === "J" && c.suit === "";
+const isQS = (c: Card) => c.rank === "Q" && c.suit === "";
 
-// 50-Point Combo: exactly 2×J♦ + 2×Q♠
 export function scoreFiftyPoint(state: GameState, player: PlayerId, cards: Card[]): number {
   if (cards.length !== 4) throw new Error("50-point combo requires 4 cards");
   const jds = cards.filter(isJD).length;
