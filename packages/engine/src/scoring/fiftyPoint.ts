@@ -1,8 +1,8 @@
 ﻿import type { Card } from "../cards";
 import type { GameState, PlayerId } from "../types";
 
-const isJD = (c: Card) => c.rank === "J" && c.suit === "";
-const isQS = (c: Card) => c.rank === "Q" && c.suit === "";
+const isJD = (c: Card) => c.rank === "J" && c.suit === "♦";
+const isQS = (c: Card) => c.rank === "Q" && c.suit === "♠";
 
 export function scoreFiftyPoint(state: GameState, player: PlayerId, cards: Card[]): number {
   if (cards.length !== 4) throw new Error("50-point combo requires 4 cards");

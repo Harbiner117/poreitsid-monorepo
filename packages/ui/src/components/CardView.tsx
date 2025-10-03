@@ -1,6 +1,11 @@
 ﻿"use client";
 import React from "react";
-import type { Card } from "@poreitsid/engine";
+
+export type Card = {
+  id: string;
+  rank: string;
+  suit: string;
+};
 
 export function CardView({ card, onClick }: { card: Card; onClick?: () => void }) {
   return (
