@@ -101,6 +101,10 @@ importers:
         version: 5.9.3
 
   packages/ui:
+    dependencies:
+      '@poreitsid/engine':
+        specifier: workspace:*
+        version: link:../engine
     devDependencies:
       '@types/react':
         specifier: ^18.2.0

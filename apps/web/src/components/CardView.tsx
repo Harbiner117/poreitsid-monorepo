@@ -1,7 +1,13 @@
+// packages/ui/src/components/CardView.tsx
+"use client";
+
 import React from "react";
 import type { Card } from "@poreitsid/engine";
 
-export function CardView({ card, onClick }: { card: Card; onClick?: () => void }) {
+export function CardView({
+  card,
+  onClick,
+}: { card: Card; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
