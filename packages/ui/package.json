@@ -3,23 +3,30 @@
   "version": "1.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src/**/*.{ts,tsx}",
-    "clean": "rm -rf dist"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "dependencies": {
+  "files": ["dist", "package.json", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "clean": "rimraf dist"
+  },
+  "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "eslint": "^8.56.0",
+    "rimraf": "^6.0.0",
     "typescript": "^5.3.3",
-    "eslint": "^8.56.0"
-  },
-  "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

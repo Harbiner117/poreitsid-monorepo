@@ -1,0 +1,1 @@
+export const DeadCards = () => <div className="text-sm text-gray-600">Dead Cards</div>;

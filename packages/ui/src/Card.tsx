@@ -1,16 +1,20 @@
 import React from 'react';
 
-export interface CardProps {
-  title?: string;
-  children: React.ReactNode;
-  className?: string;
-}
-
-export const Card: React.FC<CardProps> = ({ title, children, className = '' }) => {
-  return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
-      {title && <h3 className="text-xl font-bold mb-4">{title}</h3>}
-      {children}
-    </div>
-  );
+export type CardProps = {
+  rank: string;
+  suit: string;
+  onClick?: () => void;
 };
+
+export function Card({ rank, suit, onClick }: CardProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-2xl border p-3 shadow min-w-[60px] text-center hover:scale-105 transition"
+      title={`${rank}${suit}`}
+    >
+      <div className="text-xl font-bold">{rank}</div>
+      <div className="text-lg">{suit}</div>
+    </button>
+  );
+}

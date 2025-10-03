@@ -1,95 +1,84 @@
-import { Card, GameState, GameConfig, Player } from './types';
+import type { Action } from "./actions";
+import type { GameState, PlayerId } from "./types";
+import { drawOne } from "./state";
+import { trickWinnerNormal } from "./battle";
+import { scoreWedding, scoreFourOfAKind, scoreFiftyPoint, scoreTrumpSet25 } from "./scoring";
 
-export class Game {
-  private state: GameState;
-  private config: GameConfig;
+export function reducer(state: GameState, action: Action): GameState {
+  switch (action.type) {
+    case "PLAY_CARD": {
+      const { player, card } = action;
+      if (!state.currentTrick) throw new Error("No active trick");
+      // remove from player's hand (note: cards in scoring areas/used remain battle-playable per rules)
+      const hand = state.players[player].hand;
+      const idx = hand.findIndex(c => c.id === card.id);
+      if (idx === -1) throw new Error("Card not in hand");
+      hand.splice(idx, 1);
+      state.currentTrick.plays.push({ player, card });
+      // switch turn
+      state.turn = (player === 0 ? 1 : 0);
+      return state;
+    }
 
-  constructor(config: GameConfig) {
-    this.config = config;
-    this.state = this.initializeGame();
-  }
+    case "RESOLVE_TRICK": {
+      const trick = state.currentTrick;
+      if (!trick || trick.plays.length < 2) return state;
+      const winner = trickWinnerNormal(trick.plays, state.trumpSuit);
+      trick.winner = winner;
 
-  private initializeGame(): GameState {
-    const deck = this.createDeck();
-    const players = this.createPlayers();
-    
-    return {
-      players,
-      currentPlayer: 0,
-      deck,
-      isGameOver: false,
-    };
-  }
+      // Move both played cards to loser/winner "dead" piles per trick resolution
+      trick.plays.forEach(({ player, card }) => {
+        state.players[player].dead.push(card);
+      });
 
-  private createDeck(): Card[] {
-    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-    const deck: Card[] = [];
-    
-    for (const suit of suits) {
-      for (let value = 1; value <= 13; value++) {
-        deck.push({
-          id: `${suit}-${value}`,
-          name: `${value} of ${suit}`,
-          value,
-          suit,
-        });
+      // Winner draws first; keep 16 active (the UI may ensure execution order)
+      if (state.drawPile.length > 0) {
+        state.players[winner].hand.push(drawOne(state.drawPile));
+        const loser: PlayerId = winner === 0 ? 1 : 0;
+        if (state.drawPile.length > 0) {
+          state.players[loser].hand.push(drawOne(state.drawPile));
+        } else {
+          // Last two cards protocol activation may be handled here when pile hits 2, etc.
+        }
       }
-    }
-    
-    return this.shuffleDeck(deck);
-  }
 
-  private shuffleDeck(deck: Card[]): Card[] {
-    const shuffled = [...deck];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }
-
-  private createPlayers(): Player[] {
-    return Array.from({ length: this.config.playerCount }, (_, i) => ({
-      id: `player-${i}`,
-      name: `Player ${i + 1}`,
-      hand: [],
-      score: 0,
-    }));
-  }
-
-  public getState(): GameState {
-    return { ...this.state };
-  }
-
-  public playTurn(playerId: string, cardId: string): boolean {
-    // Simple placeholder game logic
-    const player = this.state.players.find(p => p.id === playerId);
-    if (!player) return false;
-
-    const cardIndex = player.hand.findIndex(c => c.id === cardId);
-    if (cardIndex === -1) return false;
-
-    const card = player.hand.splice(cardIndex, 1)[0];
-    player.score += card.value;
-
-    // Check for game over
-    if (player.hand.length === 0) {
-      this.state.isGameOver = true;
-      this.state.winner = playerId;
+      // Trick winner leads next
+      state.currentTrick = { leader: winner, plays: [] };
+      state.turn = winner;
+      return state;
     }
 
-    // Move to next player
-    this.state.currentPlayer = 
-      (this.state.currentPlayer + 1) % this.state.players.length;
+    case "SCORE_COMBO": {
+      // The trick winner may score exactly one eligible combo immediately
+      const { player, combo } = action;
+      let gained = 0;
+      if (combo.kind === "WEDDING") gained = scoreWedding(state, player, combo.cards);
+      else if (combo.kind === "FOUR_OF_A_KIND") gained = scoreFourOfAKind(state, player, combo.cards);
+      else if (combo.kind === "FIFTY_POINT") gained = scoreFiftyPoint(state, player, combo.cards);
+      else if (combo.kind === "ROYAL_TRUMP_SET") gained = scoreTrumpSet25(state, player, combo.cards);
 
-    return true;
-  }
+      // Check instant end if >= 150 (game ends immediately even mid-round)
+      if (state.players[player].points >= state.config.targetPoints) {
+        state.phase = "ENDED";
+      }
+      return state;
+    }
 
-  public isGameOver(): boolean {
-    return this.state.isGameOver;
-  }
+    case "SKIP_SCORING": {
+      // winner opts not to score now
+      return state;
+    }
 
-  public getWinner(): Player | undefined {
-    return this.state.players.find(p => p.id === this.state.winner);
+    case "ENTER_KIM": {
+      // Collapse zones back into hands; disable further combo scoring
+      // (Here we only signal phase change; your UI/simulator can implement the move-to-hand consolidation
+      // before setting phase to KIM)
+      state.phase = "KIM";
+      return state;
+    }
+
+    // The rest — Kim play and tally — can mirror the trick logic with Kim rules.
+    default:
+      return state;
   }
 }

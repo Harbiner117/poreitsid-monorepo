@@ -1,0 +1,1 @@
+export const UsedCards = () => <div className="text-sm text-gray-600">Used Cards</div>;
